@@ -336,5 +336,7 @@ pip-selfcheck.json
 bcn_housing_stats/media/
 
 .pytest_cache/
+.idea/
+
 
 
