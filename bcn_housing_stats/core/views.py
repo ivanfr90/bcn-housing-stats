@@ -5,7 +5,7 @@ from django.views.generic import TemplateView
 
 from config.settings.base import ResourceTypeSLUGS
 from .models import Resource
-from .services import AverageRentalPriceService
+from .services import AverageRentalPriceService, AverageOccupancyService, AverageTouristOccupancyService
 
 
 class HomeView(TemplateView):
@@ -15,13 +15,23 @@ class HomeView(TemplateView):
         context = super().get_context_data(**kwargs)
         year = 2018
 
+        # years = Resource.objects.get_years_by_resource_type(
+        #     ResourceTypeSLUGS.AVERAGE_MONTHLY_RENT.value).values_list('year', flat=True)
+        # AverageRentalPriceService.initialize_data(years=years, offset=200)
+        # categories, value_list = AverageRentalPriceService.get_average_rentals()
+        # average = AverageRentalPriceService.get_total_average_rental()
+
+        # years = Resource.objects.get_years_by_resource_type(
+        #     ResourceTypeSLUGS.AVERAGE_OCCUPANCY.value).values_list('year', flat=True)
+        # AverageOccupancyService.initialize_data(years=years, offset=200)
+        # categories, value_list = AverageOccupancyService.get_average_occupancy()
+        # average = None
+
         years = Resource.objects.get_years_by_resource_type(
-            ResourceTypeSLUGS.AVERAGE_MONTHLY_RENT.value).values_list('year', flat=True)
-
-        categories, value_list = AverageRentalPriceService.get_all_average_rentals(years=years, offset=200)
-        # categories, value_list = AverageRentalPriceService.get_average_rental(2014)
-
-        average = None #AverageRentalPriceService.get_total_average_rental()
+            ResourceTypeSLUGS.AVERAGE_TOURIST_OCCUPANCY.value).values_list('year', flat=True)
+        AverageTouristOccupancyService.initialize_data(years=years, offset=200)
+        categories, value_list = AverageTouristOccupancyService.get_average_occupancy()
+        average = None
 
         context['categories'] = categories # json.dumps(props, default=json_serial)
         context['value_list'] = value_list
