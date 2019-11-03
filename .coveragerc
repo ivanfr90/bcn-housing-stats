@@ -1,0 +1,5 @@
+[run]
+include = bcn_housing_stats/*
+omit = *migrations*, *tests*
+plugins =
+    django_coverage_plugin
