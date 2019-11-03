@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block third-party-javascript %}
+  <script src="https://code.highcharts.com/highcharts.js"></script>
+  <script src="https://code.highcharts.com/modules/exporting.js"></script>
+  <script src="https://code.highcharts.com/modules/export-data.js"></script>
+{% endblock %}
+
+{% block custom-javascript %}
+  <script src="{% static "js/charts.js" %}"></script>
+{% endblock %}
+
+{% block init-vars-javascript %}
+  <script>
+    var _categories = {{categories|safe}};
+    var _values_list = [];
+
+    {% for item in value_list %}
+      var serie = {
+          'name': 'Year {{ item.year }}',
+          'data': {{ item.values }}
+      }
+      _values_list.push(serie)
+    {% endfor %}
+  </script>
+{% endblock %}
+
+
+{% block content %}
+    {% comment %}Highcharts display{%  endcomment %}
+    <div class="row">
+      <div class="col">
+        <div class="card-deck">
+          <div class="card text-white bg-danger mb-3">
+            <div class="card-body">
+              <p class="card-text">Average rental price</p>
+              <h4 class="card-title font-weight-bold">{{ average_rental|floatformat:2 }} €</h4>
+              <p class="card-text">
+                <small>From latest data of {{ year }}</small>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col">
+        <div id="average-rental-price-resume" class="border" ></div>
+      </div>
+    </div>
+
+{% endblock content %}
+
+

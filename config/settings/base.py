@@ -1,6 +1,7 @@
 """
 Base settings to build other settings files upon.
 """
+from enum import Enum
 
 import environ
 
@@ -11,7 +12,7 @@ APPS_DIR = ROOT_DIR.path("bcn_housing_stats")
 
 env = environ.Env()
 
-READ_DOT_ENV_FILE = env.bool("DJANGO_READ_DOT_ENV_FILE", default=False)
+READ_DOT_ENV_FILE = env.bool("DJANGO_READ_DOT_ENV_FILE", default=True)
 if READ_DOT_ENV_FILE:
     # OS environment variables take precedence over variables from .env
     env.read_env(str(ROOT_DIR.path(".env")))
@@ -43,7 +44,7 @@ LOCALE_PATHS = [ROOT_DIR.path("locale")]
 # https://docs.djangoproject.com/en/dev/ref/settings/#databases
 
 DATABASES = {
-    "default": env.db("DATABASE_URL", default="postgres:///bcn_housing_stats")
+    "default": env.db("DATABASE_URL")
 }
 DATABASES["default"]["ATOMIC_REQUESTS"] = True
 
@@ -77,6 +78,7 @@ THIRD_PARTY_APPS = [
 LOCAL_APPS = [
     "bcn_housing_stats.users.apps.UsersConfig",
     # Your stuff: custom apps go here
+    "bcn_housing_stats.core.apps.CoreConfig"
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -219,7 +221,7 @@ EMAIL_TIMEOUT = 5
 # Django Admin URL.
 ADMIN_URL = "admin/"
 # https://docs.djangoproject.com/en/dev/ref/settings/#admins
-ADMINS = [("""Ivan FR""", "ivan-fr@example.com")]
+ADMINS = [("""Ivan FR""", "bcn.housing.stats@outlook.com")]
 # https://docs.djangoproject.com/en/dev/ref/settings/#managers
 MANAGERS = ADMINS
 
@@ -265,3 +267,9 @@ SOCIALACCOUNT_ADAPTER = "bcn_housing_stats.users.adapters.SocialAccountAdapter"
 
 # Your stuff...
 # ------------------------------------------------------------------------------
+class ResourceTypeSLUGS(Enum):
+    AVERAGE_MONTHLY_RENT = 'AVERAGE_MONTHLY_RENT'
+
+    @classmethod
+    def choices(cls):
+        return tuple((i.name, i.value) for i in cls)
