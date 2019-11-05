@@ -458,7 +458,7 @@ class DataService:
                 tmp_data.append(data_dict)
             tmp_data_list.append((year, tmp_data))
 
-        # all year data have to have same categories, fill without value
+        # all year data need to have same categories, fill without value
         for year, tmp_list in tmp_data_list:
             tmp_categories = set()
             for tmp_data_dict in tmp_list:

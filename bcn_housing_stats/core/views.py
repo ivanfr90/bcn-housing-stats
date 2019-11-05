@@ -39,4 +39,9 @@ class HomeView(TemplateView):
         context['year'] = year
         return context
 
+class Dashboard(TemplateView):
+    template_name = "core/dashboard.html"
+
+
 home_view = HomeView.as_view()
+dashboard_view = Dashboard.as_view()
