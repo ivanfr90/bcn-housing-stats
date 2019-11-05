@@ -141,7 +141,11 @@ class AverageRentalPriceService:
             average_rental_values = data if data else []
             total = sum(item.price for item in average_rental_values)
             avg = total / len(average_rental_values)
-            averages.append((year, avg))
+            averages.append({
+                'year': year,
+                'avg': avg
+            })
+
         return averages
 
     @staticmethod

@@ -6,11 +6,34 @@ from rest_framework.views import APIView
 
 from config.settings.base import ResourceTypeSLUGS
 from .models import Resource, ResourceType
-from .serializers import ResourceSerializer
-from .services import AverageTouristOccupancyService, AverageRentalPriceService, AverageOccupancyService
+from .serializers import ResourceSerializer, ResourceTypeSerializer
+from .services import (
+    AverageTouristOccupancyService,
+    AverageRentalPriceService,
+    AverageOccupancyService)
 
 logger = logging.getLogger(__name__)
 
+
+class ResourceTypeAPI(APIView):
+
+    def get(self, request, pk):
+        logger.info('ResourceTypeAPI GET called')
+        try:
+            resource_type = ResourceType.objects.get(pk=pk)
+        except ResourceType.DoesNotExist as e:
+            logger.info('Resource Type does not exists', exc_info=True, extra={'exception': e})
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        serializer = ResourceTypeSerializer(resource_type)
+        return Response(serializer.data)
+
+class ResourceTypeListAPI(APIView):
+
+    def get(self, request):
+        logger.info('ResourceTypeListAPI GET called')
+        resources_types = ResourceType.objects.all()
+        serializer = ResourceTypeSerializer(resources_types, many=True)
+        return Response(serializer.data)
 
 class ResourceAPI(APIView):
 
@@ -44,7 +67,7 @@ class ResourceDataAPI(APIView):
 
             categories = []
             series = []
-
+            custom_data = {}
             if years_param:
                 years = [int(item) for item in years_param.split(',')]
             else:
@@ -53,6 +76,8 @@ class ResourceDataAPI(APIView):
             if type_slug == ResourceTypeSLUGS.AVERAGE_MONTHLY_RENT.value:
                 AverageRentalPriceService.initialize_data(years=years, offset=200)
                 categories, series = AverageRentalPriceService.get_average_rentals()
+                average_per_years = AverageRentalPriceService.get_total_average_rental()
+                custom_data = {'average_per_years': average_per_years}
             elif type_slug == ResourceTypeSLUGS.AVERAGE_OCCUPANCY.value:
                 AverageOccupancyService.initialize_data(years=years, offset=200)
                 categories, series = AverageOccupancyService.get_average_occupancy()
@@ -67,5 +92,6 @@ class ResourceDataAPI(APIView):
             return Response(status=status.HTTP_404_NOT_FOUND)
         return Response({
             'categories': categories,
-            'series': series
+            'series': series,
+            **custom_data
         })

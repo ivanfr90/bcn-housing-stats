@@ -1,9 +1,6 @@
 from django.urls import path
 
-from .apis import (
-    ResourceListAPI,
-    ResourceAPI,
-    ResourceDataAPI)
+from .apis import (ResourceListAPI, ResourceAPI, ResourceDataAPI, ResourceTypeAPI, ResourceTypeListAPI)
 from .views import (
     home_view,
     dashboard_view
@@ -17,8 +14,10 @@ urlpatterns = [
 
 # api endpoints
 apipatterns = [
-    path("resource/<int:pk>/", view=ResourceAPI.as_view(), name="get_resource"),
+    path("resources/<int:pk>/", view=ResourceAPI.as_view(), name="get_resource"),
     path("resources/", view=ResourceListAPI.as_view(), name="get_resources"),
+    path("resources-types/<int:pk>/", view=ResourceTypeAPI.as_view(), name="get_resource_type"),
+    path("resources-types/", view=ResourceTypeListAPI.as_view(), name="get_resources_types"),
     path("resource-data/<int:resource_type_pk>/", view=ResourceDataAPI.as_view(), name="get_resource_data"),
 ]
 

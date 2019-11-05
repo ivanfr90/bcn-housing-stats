@@ -3,6 +3,12 @@ from rest_framework import serializers
 from .models import Resource, ResourceType
 
 
+class ResourceTypeSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = ResourceType
+        fields = ('id', 'slug', 'name', 'description')
+
 class ResourceTypeSerializerReduced(serializers.ModelSerializer):
 
     class Meta:
