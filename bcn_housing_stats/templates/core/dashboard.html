@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load i18n %}
 {% load static %}
 
 {% block third-party-javascript %}
@@ -11,11 +12,13 @@
 {% block custom-javascript %}
   <script src="{% static "js/constants.js" %}"></script>
   <script src="{% static "js/endpoints.js" %}"></script>
+  <script src="{% static "js/charts.js" %}"></script>
   <script src="{% static "js/dashboard.js" %}"></script>
+  <script src="{% static "js/dashboard-events.js" %}"></script>
 {% endblock %}
 
 {% block custom-css %}
-
+  <link href="{% static 'css/dashboard.css' %}" rel="stylesheet">
 {% endblock custom-css %}
 
 {% block content-no-container %}
@@ -23,116 +26,56 @@
   <div class="row">
     <nav class="col-md-2 d-none d-md-block bg-light sidebar">
       <div class="sidebar-sticky">
-        <ul class="nav flex-column">
-          <li class="nav-item">
-            <a class="nav-link active" href="{% url 'core:dashboard' %}">
-              <span data-feather="home"></span>
-              Dashboard <span class="sr-only">(current)</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="#">
-              <span data-feather="file"></span>
-              Orders
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="#">
-              <span data-feather="shopping-cart"></span>
-              Products
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="#">
-              <span data-feather="users"></span>
-              Customers
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="#">
-              <span data-feather="bar-chart-2"></span>
-              Reports
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="#">
-              <span data-feather="layers"></span>
-              Integrations
-            </a>
-          </li>
-        </ul>
-
         <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
-          <span>Saved reports</span>
-          <a class="d-flex align-items-center text-muted" href="#">
+          <span>{% trans "Historical data" %}</span>
+          <a class="d-flex align-items-center text-muted" data-toggle="collapse" href="#collapse-historic-data" role="button" aria-expanded="true" aria-controls="collapse-historic-data">
             <span data-feather="plus-circle"></span>
           </a>
         </h6>
-        <ul class="nav flex-column mb-2">
-          <li class="nav-item">
-            <a class="nav-link" href="#">
-              <span data-feather="file-text"></span>
-              Current month
+        <div class="accordion" id="accordion-menu">
+          <div class="collapse show" id="collapse-historic-data" data-parent="#accordion-menu">
+            <ul class="nav flex-column px-4">
+              {% for year in years %}
+                <li class="nav-item">
+                  <div class="custom-control custom-switch">
+                    <input type="checkbox" class="custom-control-input" id="historic-data-year-{{ year }}" name="historic-data-year" value="{{ year }}" checked>
+                    <label class="custom-control-label" for="historic-data-year-{{ year }}">{% blocktrans %} Year {{ year }}{% endblocktrans %}</label>
+                  </div>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+
+          <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+            <span>{% trans "Simple data" %}</span>
+            <a class="d-flex align-items-center text-muted" data-toggle="collapse" href="#collapse-simple-data" role="button" aria-expanded="false" aria-controls="collapse-simple-data">
+              <span data-feather="plus-circle"></span>
             </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="#">
-              <span data-feather="file-text"></span>
-              Last quarter
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="#">
-              <span data-feather="file-text"></span>
-              Social engagement
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="#">
-              <span data-feather="file-text"></span>
-              Year-end sale
-            </a>
-          </li>
-        </ul>
+          </h6>
+          <div class="collapse" id="collapse-simple-data" data-parent="#accordion-menu">
+            <ul class="nav flex-column mb-2 px-4">
+            {% for year in years %}
+              <li class="nav-item">
+                <div class="custom-control custom-switch">
+                  <input type="checkbox" class="custom-control-input" id="simple-data-year-{{ year }}" name="simple-data-year" value="{{ year }}">
+                  <label class="custom-control-label" for="simple-data-year-{{ year }}">{% blocktrans %} Year {{ year }}{% endblocktrans %}</label>
+                </div>
+              </li>
+            {% endfor %}
+            </ul>
+          </div>
+        </div>
+
+        <div class="text-center py-5">
+          <button type="button" class="btn btn-secondary btn-sm py-0" id="btn-simple-data">Apply filters</button>
+        </div>
+
       </div>
     </nav>
 
-    <main role="main" class="col-md-9 ml-sm-auto col-lg-10 px-4">
-      <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">Dashboard</h1>
-      </div>
-
-      <div class="row">
-        <div class="col">
-          <div class="card-deck">
-            <div class="card text-white bg-danger mb-3">
-              <div class="card-body">
-                <h5 class="card-title ">Average rental price</h5>
-                <div id="average-rental-price-years">{# javascript content #}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="row py-2">
-        <div class="col">
-          <div id="average-rental-price" class="border"></div>
-        </div>
-      </div>
-
-      <div class="row py-2">
-        <div class="col">
-          <div id="average-occupancy" class="border"></div>
-        </div>
-      </div>
-
-      <div class="row py-2">
-        <div class="col">
-          <div id="average-tourist-occupancy" class="border"></div>
-        </div>
-      </div>
-    </main>
+    {% block dashboard_content %}
+      {% include "core/dashboard-content.html" %}
+    {% endblock dashboard_content %}
 
   </div>
 </div>

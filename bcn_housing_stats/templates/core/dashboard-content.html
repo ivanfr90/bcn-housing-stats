@@ -1,0 +1,25 @@
+{% load i18n %}
+{% load static %}
+
+
+<main role="main" class="col-md-9 ml-sm-auto col-lg-10 px-4 my-3">
+  <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Dashboard</h1>
+  </div>
+
+  <div class="row">
+    <div class="col">
+      <div class="card-deck">
+        <div class="card text-white bg-danger mb-3">
+          <div class="card-body">
+            <h5 class="card-title ">Average rental price</h5>
+            <div id="average-rental-price-years">{# javascript content #}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <class id="charts"></class>
+
+</main>

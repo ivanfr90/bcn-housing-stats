@@ -3,8 +3,7 @@ from django.urls import path
 from .apis import (ResourceListAPI, ResourceAPI, ResourceDataAPI, ResourceTypeAPI, ResourceTypeListAPI)
 from .views import (
     home_view,
-    dashboard_view
-)
+    dashboard_view)
 
 app_name = "core"
 urlpatterns = [

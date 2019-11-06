@@ -5,7 +5,7 @@ from django.views.generic import TemplateView
 
 from config.settings.base import ResourceTypeSLUGS
 from .models import Resource
-from .services import AverageRentalPriceService, AverageOccupancyService, AverageTouristOccupancyService
+from .services import RentalPriceService, AverageResidentsService, TouristRentalsService
 
 
 class HomeView(TemplateView):
@@ -23,14 +23,14 @@ class HomeView(TemplateView):
 
         # years = Resource.objects.get_years_by_resource_type(
         #     ResourceTypeSLUGS.AVERAGE_OCCUPANCY.value).values_list('year', flat=True)
-        # AverageOccupancyService.initialize_data(years=years, offset=200)
-        # categories, value_list = AverageOccupancyService.get_average_occupancy()
+        # AverageResidentsService.initialize_data(years=years, offset=200)
+        # categories, value_list = AverageResidentsService.get_average_occupancy()
         # average = None
 
         years = Resource.objects.get_years_by_resource_type(
             ResourceTypeSLUGS.AVERAGE_TOURIST_OCCUPANCY.value).values_list('year', flat=True)
-        AverageTouristOccupancyService.initialize_data(years=years, offset=200)
-        categories, value_list = AverageTouristOccupancyService.get_average_occupancy()
+        TouristRentalsService.initialize_data(years=years, offset=200)
+        categories, value_list = TouristRentalsService.get_average_occupancy()
         average = None
 
         context['categories'] = categories # json.dumps(props, default=json_serial)
@@ -39,9 +39,15 @@ class HomeView(TemplateView):
         context['year'] = year
         return context
 
-class Dashboard(TemplateView):
+class DashBoardView(TemplateView):
     template_name = "core/dashboard.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        years = Resource.objects.all().values_list('year', flat=True).distinct().order_by('-year')
+        context['years'] = years
+        return context
 
 
 home_view = HomeView.as_view()
-dashboard_view = Dashboard.as_view()
+dashboard_view = DashBoardView.as_view()

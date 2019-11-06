@@ -8,9 +8,9 @@ from config.settings.base import ResourceTypeSLUGS
 from .models import Resource, ResourceType
 from .serializers import ResourceSerializer, ResourceTypeSerializer
 from .services import (
-    AverageTouristOccupancyService,
-    AverageRentalPriceService,
-    AverageOccupancyService)
+    TouristRentalsService,
+    RentalPriceService,
+    AverageResidentsService)
 
 logger = logging.getLogger(__name__)
 
@@ -65,33 +65,52 @@ class ResourceDataAPI(APIView):
             years_param = self.request.query_params.get('years', None)
             type_slug = ResourceType.objects.get(pk=resource_type_pk).slug
 
-            categories = []
-            series = []
-            custom_data = {}
             if years_param:
                 years = [int(item) for item in years_param.split(',')]
             else:
                 years = Resource.objects.get_years_by_resource_type(type_slug).values_list('year', flat=True)
 
+            data_response = {}
             if type_slug == ResourceTypeSLUGS.AVERAGE_MONTHLY_RENT.value:
-                AverageRentalPriceService.initialize_data(years=years, offset=200)
-                categories, series = AverageRentalPriceService.get_average_rentals()
-                average_per_years = AverageRentalPriceService.get_total_average_rental()
-                custom_data = {'average_per_years': average_per_years}
+                RentalPriceService.initialize_data(years=years, offset=200)
+                categories, series = RentalPriceService.get_average_rentals()
+                data_response.update({'average_rental': {
+                    'categories': categories,
+                    'series': series,}
+                })
+                categories, series = RentalPriceService.get_average_rental_by_years()
+                data_response.update({'average_rental_per_years': {
+                    'categories': categories,
+                    'series': series,}
+                })
             elif type_slug == ResourceTypeSLUGS.AVERAGE_OCCUPANCY.value:
-                AverageOccupancyService.initialize_data(years=years, offset=200)
-                categories, series = AverageOccupancyService.get_average_occupancy()
-            elif type_slug == ResourceTypeSLUGS.AVERAGE_TOURIST_OCCUPANCY.value:
-                AverageTouristOccupancyService.initialize_data(years=years, offset=200)
-                categories, series = AverageTouristOccupancyService.get_average_occupancy()
+                AverageResidentsService.initialize_data(years=years, offset=200)
+                categories, series = AverageResidentsService.get_average_residents()
+                data_response.update({'average_residents': {
+                    'categories': categories,
+                    'series': series, }
+                })
+                categories, series = AverageResidentsService.get_residents_per_year()
+                data_response.update({'residents_per_years': {
+                    'categories': categories,
+                    'series': series, }
+                })
+            elif type_slug == ResourceTypeSLUGS.TOURIST_OCCUPANCY.value:
+                TouristRentalsService.initialize_data(years=years, offset=200)
+                categories, series = TouristRentalsService.get_average_occupancy_districts()
+                data_response.update({'average_tourist_occupancy': {
+                    'categories': categories,
+                    'series': series, }
+                })
+                categories, series = TouristRentalsService.get_rentals_accommodations_per_years()
+                data_response.update({'tourist_rental_accommodations_per_years': {
+                    'categories': categories,
+                    'series': series, }
+                })
         except ResourceType.DoesNotExist as e:
             logger.info('ResourceData does not exists', exc_info=True, extra={'exception': e})
             return Response(status=status.HTTP_404_NOT_FOUND)
         except ValueError as e:
             logger.info('Invalid year', exc_info=True, extra={'exception': e})
             return Response(status=status.HTTP_404_NOT_FOUND)
-        return Response({
-            'categories': categories,
-            'series': series,
-            **custom_data
-        })
+        return Response(data_response)

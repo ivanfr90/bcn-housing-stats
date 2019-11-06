@@ -270,7 +270,7 @@ SOCIALACCOUNT_ADAPTER = "bcn_housing_stats.users.adapters.SocialAccountAdapter"
 class ResourceTypeSLUGS(Enum):
     AVERAGE_MONTHLY_RENT = 'AVERAGE_MONTHLY_RENT'
     AVERAGE_OCCUPANCY = 'AVERAGE_OCCUPANCY'
-    AVERAGE_TOURIST_OCCUPANCY = 'AVERAGE_TOURIST_OCCUPANCY'
+    TOURIST_OCCUPANCY = 'TOURIST_OCCUPANCY'
 
     @classmethod
     def choices(cls):

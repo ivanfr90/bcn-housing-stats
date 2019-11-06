@@ -12,72 +12,16 @@ from .constants import (
     AVG_RENTAL_PRICE_VALUE_CONCEPT_MONTHLY_RENTAL,
     AVG_RENTAL_PRICE,
     AVG_RENTAL_PRICE_VALUE_PRICE_NA,
-    AVG_OCCUPANCY, AVG_TOURIST_OCCUPANCY)
+    AVG_RESIDENTS, TOURIST_OCCUPANCY)
+from .dataclasses import AverageRentalPrice, AverageResidents, TouristOccupancy, \
+    TouristAccommodationAvg
 from .models import Resource
 
 logger = logging.getLogger(__name__)
 
 
-class AverageRentalPrice:
 
-    def __init__(self,
-                 concept: str,
-                 code_district: str,
-                 name_district: str,
-                 code_neighborhood: str,
-                 name_neighborhood: str,
-                 quarter: str,
-                 price: str,
-                 year: str):
-        self.concept = concept
-        self.code_district = int(code_district)
-        self.name_district = name_district
-        self.code_neighborhood = int(code_neighborhood)
-        self.name_neighborhood = name_neighborhood
-        self.quarter = int(quarter)
-        self.price = float(price)
-        self.year = int(year)
-
-
-class AverageOccupancy:
-
-    def __init__(self,
-                 code_district: int,
-                 name_district: str,
-                 code_neighborhood: str,
-                 name_neighborhood: str,
-                 houses: str,
-                 population: str,
-                 average_occupancy: str,
-                 year: str):
-        self.code_district = int(code_district)
-        self.name_district = name_district
-        self.code_neighborhood = int(code_neighborhood)
-        self.name_neighborhood = name_neighborhood
-        self.houses = int(houses)
-        self.population = int(population)
-        self.average_occupancy = float(average_occupancy)
-        self.year = int(year)
-
-class AverageTouristOccupacy:
-
-    def __init__(self,
-                 name_district: str,
-                 name_neighborhood: str,
-                 accommodation_type: str="",
-                 price: str="0",
-                 availability: str= "0"
-                 ):
-        self.name_district = name_district
-        self.name_neighborhood = name_neighborhood
-        self.accommodation_type = accommodation_type
-        self.price = float(price)
-        self.availability = int(availability)
-        self.average_occupancy = None
-
-
-
-class AverageRentalPriceService:
+class RentalPriceService:
 
     def __init__(self, years: list = [], offset: int = 100):
         self.years = years
@@ -87,6 +31,8 @@ class AverageRentalPriceService:
     @classmethod
     def initialize_data(cls, years: list = [], offset: int = 100) -> None:
         cls(years, offset)
+        start_time = time.time()
+
         if not years:
             year = Resource.objects.get_years_by_resource_type(
                 ResourceTypeSLUGS.AVERAGE_MONTHLY_RENT.value).values_list('year', flat=True).order_by('-year').first()
@@ -99,26 +45,24 @@ class AverageRentalPriceService:
 
         cls.data = []
         for resource in resources:
-            start_time = time.time()
-            if resource:
-                data_transformed = []
+            data_transformed = []
 
-                # first try from endpoint
-                json_data_list = DataService.fetch_data(resource.url, offset)
+            # first try from endpoint
+            json_data_list = DataService.fetch_data(resource.url, offset)
 
-                # if fails, try from csv file
-                if json_data_list:
-                    for json_data in json_data_list:
-                        data_transformed += cls._transform_json_data(json_data)
-                else:
-                    dict_data_list = DataService.read_data(resource.file)
-                    data_transformed = cls._transform_dict_data(dict_data_list)
-                logger.info(f'Total transformed items {len(data_transformed)}')
+            # if fails, try from csv file
+            if json_data_list:
+                for json_data in json_data_list:
+                    data_transformed += cls._transform_json_data(json_data)
+            else:
+                dict_data_list = DataService.read_data(resource.file)
+                data_transformed = cls._transform_dict_data(dict_data_list)
+            logger.info(f'Total transformed items {len(data_transformed)}')
 
-                cls.data.append((resource.year, [*cls._unify_year_quarter_data(data_transformed)]))
-                logger.info(f'Total unified items {len(cls.data)}')
+            cls.data.append((resource.year, [*cls._unify_year_quarter_data(data_transformed)]))
+            logger.info(f'Total unified items {len(cls.data)}')
 
-            duration = time.time() - start_time
+        duration = time.time() - start_time
         print(f"Process time: {duration} seconds")
 
     @classmethod
@@ -132,21 +76,23 @@ class AverageRentalPriceService:
             value_attr=lambda item: getattr(item, "price"))
 
     @classmethod
-    def get_total_average_rental(cls) -> list:
+    def get_average_rental_by_years(cls) -> list:
         if not hasattr(cls, 'data'):
             raise Exception("Method initialize_data() not called. Class needs initialization")
 
+        categories = []
         averages = []
         for year, data in cls.data:
             average_rental_values = data if data else []
             total = sum(item.price for item in average_rental_values)
             avg = total / len(average_rental_values)
+            categories.append(year)
             averages.append({
                 'year': year,
-                'avg': avg
+                'value': avg
             })
 
-        return averages
+        return categories, averages
 
     @staticmethod
     def _transform_json_data(json_data: json) -> list:
@@ -155,7 +101,7 @@ class AverageRentalPriceService:
             for record in json_data['result']['records']:
                 empty_price = record[AVG_RENTAL_PRICE.PRICE] == AVG_RENTAL_PRICE_VALUE_PRICE_NA
                 if not empty_price:
-                    data.append(AverageRentalPriceService._create_object(record))
+                    data.append(RentalPriceService._create_object(record))
                 else:
                     logger.warning(f'Element {record} with not price')
         return data
@@ -166,7 +112,7 @@ class AverageRentalPriceService:
         for dict_data in dict_data_list:
             empty_price = dict_data[AVG_RENTAL_PRICE.PRICE] == AVG_RENTAL_PRICE_VALUE_PRICE_NA
             if not empty_price:
-                data.append(AverageRentalPriceService._create_object(dict_data))
+                data.append(RentalPriceService._create_object(dict_data))
             else:
                 logger.warning(f'Element {dict_data} with not price')
         return data
@@ -218,7 +164,7 @@ class AverageRentalPriceService:
         return averages_rental_prices_dict.values()
 
 
-class AverageOccupancyService:
+class AverageResidentsService:
 
     def __init__(self, years: list = [], offset: int = 100):
         self.years = years
@@ -228,6 +174,8 @@ class AverageOccupancyService:
     @classmethod
     def initialize_data(cls, years: list = [], offset: int = 100) -> None:
         cls(years, offset)
+        start_time = time.time()
+
         if not years:
             year = Resource.objects.get_years_by_resource_type(
                 ResourceTypeSLUGS.AVERAGE_OCCUPANCY.value).values_list('year', flat=True).order_by('-year').first()
@@ -240,58 +188,74 @@ class AverageOccupancyService:
 
         cls.data = []
         for resource in resources:
-            start_time = time.time()
-            if resource:
-                data_transformed = []
+            data_transformed = []
 
-                # first try from endpoint
-                json_data_list = DataService.fetch_data(resource.url, offset)
+            # first try from endpoint
+            json_data_list = DataService.fetch_data(resource.url, offset)
 
-                # if fails, try from csv file
-                if json_data_list:
-                    for json_data in json_data_list:
-                        data_transformed += cls._transform_json_data(json_data)
-                else:
-                    dict_data_list = DataService.read_data(resource.file)
-                    data_transformed = cls._transform_dict_data(dict_data_list)
-                logger.info(f'Total transformed items {len(data_transformed)}')
+            # if fails, try from csv file
+            if json_data_list:
+                for json_data in json_data_list:
+                    data_transformed += cls._transform_json_data(json_data)
+            else:
+                dict_data_list = DataService.read_data(resource.file)
+                data_transformed = cls._transform_dict_data(dict_data_list)
+            logger.info(f'Total transformed items {len(data_transformed)}')
 
-                cls.data.append((resource.year, data_transformed))
-                logger.info(f'Total unified items {len(cls.data)}')
+            cls.data.append((resource.year, data_transformed))
+            logger.info(f'Total unified items {len(cls.data)}')
 
-            duration = time.time() - start_time
+        duration = time.time() - start_time
         print(f"Process time: {duration} seconds")
 
     @classmethod
-    def get_average_occupancy(cls) -> tuple:
+    def get_average_residents(cls) -> tuple:
         if not hasattr(cls, 'data'):
             raise Exception("Method initialize_data() not called. Class needs initialization")
 
         return DataService.normalize_data(
             cls.data,
             category_attr=lambda item: f'{getattr(item, "name_district")} / {getattr(item, "name_neighborhood")}',
-            value_attr=lambda item: getattr(item, "population"))
+            value_attr=lambda item: getattr(item, "residents"))
+
+    @classmethod
+    def get_residents_per_year(cls) -> list:
+        if not hasattr(cls, 'data'):
+            raise Exception("Method initialize_data() not called. Class needs initialization")
+
+        categories = []
+        averages = []
+        for year, item in cls.data:
+            residents_list = item if item else []
+            total = sum(resident_item.residents for resident_item in residents_list)
+            categories.append(year)
+            averages.append({
+                'year': year,
+                'value': total
+            })
+
+        return categories, averages
 
     @staticmethod
     def _transform_json_data(json_data: json):
         data = []
         if json_data and json_data['success'] is True:
             for record in json_data['result']['records']:
-                data.append(AverageOccupancyService._create_object(record))
+                data.append(AverageResidentsService._create_object(record))
         return data
 
     @staticmethod
     def _create_object(dict_data: dict):
         try:
-            average_occupancy = AverageOccupancy(
-                dict_data[AVG_OCCUPANCY.DISTRICT_CODE],
-                dict_data[AVG_OCCUPANCY.DISTRICT_NAME],
-                dict_data[AVG_OCCUPANCY.NEIGHBORHOOD_CODE],
-                dict_data[AVG_OCCUPANCY.NEIGHBORHOOD_NAME],
-                dict_data[AVG_OCCUPANCY.HOUSES],
-                dict_data[AVG_OCCUPANCY.POPULATION],
-                dict_data[AVG_OCCUPANCY.AVERAGE_OCCUPANCY],
-                dict_data[AVG_OCCUPANCY.YEAR]
+            average_occupancy = AverageResidents(
+                dict_data[AVG_RESIDENTS.DISTRICT_CODE],
+                dict_data[AVG_RESIDENTS.DISTRICT_NAME],
+                dict_data[AVG_RESIDENTS.NEIGHBORHOOD_CODE],
+                dict_data[AVG_RESIDENTS.NEIGHBORHOOD_NAME],
+                dict_data[AVG_RESIDENTS.HOUSES],
+                dict_data[AVG_RESIDENTS.RESIDENTS],
+                dict_data[AVG_RESIDENTS.AVERAGE_OCCUPANCY],
+                dict_data[AVG_RESIDENTS.YEAR]
             )
             return average_occupancy
         except Exception as e:
@@ -299,7 +263,7 @@ class AverageOccupancyService:
 
 
 
-class AverageTouristOccupancyService:
+class TouristRentalsService:
 
     def __init__(self, years: list = [], offset: int = 100):
         self.years = years
@@ -309,78 +273,112 @@ class AverageTouristOccupancyService:
     @classmethod
     def initialize_data(cls, years: list = [], offset: int = 100) -> None:
         cls(years, offset)
+        start_time = time.time()
+
         if not years:
             year = Resource.objects.get_years_by_resource_type(
-                ResourceTypeSLUGS.AVERAGE_TOURIST_OCCUPANCY.value).values_list('year', flat=True).order_by('-year').first()
+                ResourceTypeSLUGS.TOURIST_OCCUPANCY.value).values_list('year', flat=True).order_by('-year').first()
             resources = Resource.objects.filter(
-                type__slug=ResourceTypeSLUGS.AVERAGE_TOURIST_OCCUPANCY.value, year=year)
+                type__slug=ResourceTypeSLUGS.TOURIST_OCCUPANCY.value, year=year)
             cls.years = [resources.first().year] if resources else []
         else:
             resources = Resource.objects.filter(
-                type__slug=ResourceTypeSLUGS.AVERAGE_TOURIST_OCCUPANCY.value, year__in=years).order_by("year")
+                type__slug=ResourceTypeSLUGS.TOURIST_OCCUPANCY.value, year__in=years).order_by("year")
 
         cls.data = []
         for resource in resources:
-            start_time = time.time()
-            if resource:
-                data_transformed = []
+            data_transformed = []
 
-                # first try from endpoint if has
-                json_data_list = []
-                if resource.url:
-                    json_data_list = DataService.fetch_data(resource.url, offset)
-                    for json_data in json_data_list:
-                        data_transformed += cls._transform_json_data(json_data)
-                elif resource.file and not json_data_list:
-                    dict_data_list = DataService.read_data(resource.file)
-                    data_transformed = cls._transform_dict_data(dict_data_list)
-                logger.info(f'Total transformed items {len(data_transformed)}')
+            # first try from endpoint if has
+            json_data_list = []
+            if resource.url:
+                json_data_list = DataService.fetch_data(resource.url, offset)
+                for json_data in json_data_list:
+                    data_transformed += cls._transform_json_data(json_data)
+            elif resource.file and not json_data_list:
+                dict_data_list = DataService.read_data(resource.file)
+                data_transformed = cls._transform_dict_data(dict_data_list)
+            logger.info(f'Total transformed items {len(data_transformed)}')
 
-                cls.data.append((resource.year, [*cls._unify_district_neighborhood_data(data_transformed)]))
-                logger.info(f'Total unified items {len(cls.data)}')
+            cls.data.append((resource.year, data_transformed))
 
-            duration = time.time() - start_time
+        duration = time.time() - start_time
         print(f"Process time: {duration} seconds")
 
+    # @classmethod
+    # def get_average_occupancy_neighborhood(cls) -> tuple:
+    #     if not hasattr(cls, 'data'):
+    #         raise Exception("Method initialize_data() not called. Class needs initialization")
+    #
+    #     return DataService.normalize_data(
+    #         cls.data,
+    #         category_attr=lambda item: f'{getattr(item, "name_district")} / {getattr(item, "name_neighborhood")}',
+    #         value_attr=lambda item: getattr(item, "average_occupancy"))
+
     @classmethod
-    def get_average_occupancy(cls) -> tuple:
+    def get_average_occupancy_districts(cls) -> tuple:
         if not hasattr(cls, 'data'):
             raise Exception("Method initialize_data() not called. Class needs initialization")
 
+        data = []
+        for year, item in cls.data:
+            data.append((year, [*cls._unify_district_neighborhood_data(item)]))
+
         return DataService.normalize_data(
-            cls.data,
+            data,
             category_attr=lambda item: f'{getattr(item, "name_district")} / {getattr(item, "name_neighborhood")}',
-            value_attr=lambda item: getattr(item, "average_occupancy"))
+            value_attr=lambda item: getattr(item, "total_apartments"))
+
+    @classmethod
+    def get_rentals_accommodations_per_years(cls) -> list:
+        if not hasattr(cls, 'data'):
+            raise Exception("Method initialize_data() not called. Class needs initialization")
+
+        data = []
+        for year, item in cls.data:
+            data.append((year, [*cls._unify_district_neighborhood_data(item)]))
+
+        categories = []
+        averages = []
+        for year, item in data:
+            rental_accommodations = item if item else []
+            total = sum(rental_accommodation.total_apartments for rental_accommodation in rental_accommodations)
+            categories.append(year)
+            averages.append({
+                'year': year,
+                'value': total
+            })
+
+        return categories, averages
 
     @staticmethod
     def _transform_dict_data(dict_data_list: list) -> list:
         data = []
         for dict_data in dict_data_list:
-            data.append(AverageTouristOccupancyService._create_object(dict_data))
+            data.append(TouristRentalsService._create_object(dict_data))
         return data
 
     @staticmethod
     def _create_object(dict_data: dict):
         try:
-            average_tourist_occupancy_price = AverageTouristOccupacy(
-                dict_data[AVG_TOURIST_OCCUPANCY.DISTRICT_NAME],
-                dict_data[AVG_TOURIST_OCCUPANCY.NEIGHBORHOOD_NAME],
-                dict_data[AVG_TOURIST_OCCUPANCY.ACCOMMODATION_TYPE],
-                dict_data[AVG_TOURIST_OCCUPANCY.PRICE],
-                dict_data[AVG_TOURIST_OCCUPANCY.AVAILABILITY]
+            tourist_occupancy = TouristOccupancy(
+                dict_data[TOURIST_OCCUPANCY.DISTRICT_NAME],
+                dict_data[TOURIST_OCCUPANCY.NEIGHBORHOOD_NAME],
+                dict_data[TOURIST_OCCUPANCY.ACCOMMODATION_TYPE],
+                dict_data[TOURIST_OCCUPANCY.PRICE],
+                dict_data[TOURIST_OCCUPANCY.AVAILABILITY]
             )
-            return average_tourist_occupancy_price
+            return tourist_occupancy
         except Exception as e:
             logger.error(f'An error reading transform data', exc_info=True, extra={'exception': e})
 
     @staticmethod
     def _unify_district_neighborhood_data(data: list) -> list:
         """
-        Unify year quarter data
+        Unify total apartments by district and neighborhood
         :param data:
         :return:
         """
-        # group all data by same district and neighborhood
         temp_data_dict = dict()
         for item in data:
             key = f'{item.name_district}${item.name_neighborhood}'
@@ -390,13 +388,13 @@ class AverageTouristOccupancyService:
             else:
                 temp_data_dict[key] = [item]
 
-        # calculate the average occupancy of each grouped list
+        # calculate total apartments of each grouped list
         for key, values in temp_data_dict.items():
-            average_occupancy = AverageTouristOccupacy(
+            average_occupancy = TouristAccommodationAvg(
                 values[0].name_district,
-                values[0].name_neighborhood
+                values[0].name_neighborhood,
+                len(values)
             )
-            average_occupancy.average_occupancy = len(values)
             temp_data_dict[key] = average_occupancy
 
         return temp_data_dict.values()

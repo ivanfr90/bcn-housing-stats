@@ -1,20 +1,12 @@
-function updateChartsTypeColumn(id, data) {
-	$.each(data.series, function(i, serie) {
-		charts[id].addSeries({
-			name: serie.year,
-			data: serie.values
-		}, false);
-	});
 
-	charts[id].xAxis[0].update({
-		categories: data.categories
-	}, true);
+// start function
+var typeSelected = DEFAULT_TO_INIT;
+$(document).ready(function() {
+	(loadAndRender)();
+});
 
-	charts[id].hideLoading();
-}
 
 function updateCardDeck(id, data) {
-
 	try {
 		$.each(data.average_per_years, function(i, value) {
 			$('#' + id).append(
@@ -27,141 +19,131 @@ function updateCardDeck(id, data) {
 	} catch (e) {
 		$('#' + id).append($('<p/>', {text: `${ERROR_LOADING_DATA}`}));
 	}
-}
+};
 
-var charts = {};
-$(document).ready(function() {
-	var containerAverageRentalPrice = 'average-rental-price';
-	charts[containerAverageRentalPrice] = Highcharts.chart(containerAverageRentalPrice, {
-		chart: {
-			type: 'column',
-		},
-		title: {
-			text: 'Average rental price in Barcelona (Spain)'
-		},
-		subtitle: {
-			text: ''
-		},
-		xAxis: {
-			categories: [],
-			crosshair: true
-		},
-		yAxis: {
-			min: 0,
-			title: {
-				text: 'Price in Euros'
-			}
-		},
-		tooltip: {
-			headerFormat: '<span style="font-size:10px">{point.key}</span><table>',
-			pointFormat: '<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
-				'<td style="padding:0"><b>{point.y: .1f} €</b></td></tr>',
-			footerFormat: '</table>',
-			shared: true,
-			useHTML: true
-		},
-		plotOptions: {
-			column: {
-				pointPadding: 0.2,
-				borderWidth: 0
-			}
-		},
-		series: [],
-		credits: {
-			enabled: false
-		},
+
+function loadAndRender() {
+	var selector = '';
+	if (typeSelected === HISTORIC_DATA) {
+		selector = 'historic-data-year';
+	} else if (typeSelected === SIMPLE_DATA) {
+		selector = 'simple-data-year';
+	}
+
+	checkedOptions = $(`input[name=${selector}]:checked`).map(function () {
+		return this.value;
+	}).get();
+
+	cleanContainerChars();
+	reloadCharts(checkedOptions);
+
+	console.log(typeSelected);
+	console.log(checkedOptions);
+};
+
+function cleanContainerChars() {
+	$(`#${CHART_CONTAINER}`).empty();
+};
+
+function reloadCharts(checkedOptions) {
+	if (typeSelected === HISTORIC_DATA) {
+		renderHistoricData(checkedOptions);
+	} else if (typeSelected === SIMPLE_DATA) {
+
+	}
+};
+
+function createChartContainer(id) {
+	$(`#${CHART_CONTAINER}`).append(
+		$('<div/>', {
+			"class": 'row py-2'
+		}).append($('<div/>', {
+			"class": 'col'
+		}).append($('<div/>', {
+			"id": id,
+			"class": "border"
+		})))
+	);
+};
+
+function createRow(rowId) {
+	$(`#${CHART_CONTAINER}`).append(
+		$('<div/>', {
+			"id": rowId,
+			"class": 'row py-2'
+		})
+	);
+};
+
+function createCol(id, rowId, col) {
+	$(`#${rowId}`).append(
+		($('<div/>', {
+			"class": col
+		}).append($('<div/>', {
+			"id": id,
+			"class": "border"
+		})))
+	);
+};
+
+function renderHistoricData(years) {
+	createRow('single-charts');
+	createCol(containerBasicLineAverageRentalPricePerYearsID, 'single-charts', 'col-4');
+	basicLine(containerBasicLineAverageRentalPricePerYearsID,
+		'Historic Housing Rental Price Growth by Years',
+		'Housing rental price',
+		'.1f',
+		'€');
+
+	createCol(containerBasicLineResidentsPerYearsID, 'single-charts', 'col-4');
+	basicLine(containerBasicLineResidentsPerYearsID,
+		'Historic Residents Growth by Years',
+		'Residents',
+		'.0f',
+		'residents');
+
+	createCol(containerBasicLineAccommodationsRentalsPerYearsID, 'single-charts', 'col-4');
+	basicLine(containerBasicLineAccommodationsRentalsPerYearsID,
+		'Historic Housing Tourist Rentals Growth by Years',
+		'Rentals',
+		'.0f',
+		'accommodations');
+
+	createChartContainer(containerAverageRentalPriceColumnVerticalID, 'col');
+	columnVerticalChart(containerAverageRentalPriceColumnVerticalID,
+		'Average rental price in Barcelona (Spain)',
+		'Price in Euros',
+		'.1f',
+		'€');
+
+	createChartContainer(containerAverageOccupancyColumnVerticalID, 'col');
+	columnVerticalChart(containerAverageOccupancyColumnVerticalID,
+		'Average occupancy in Barcelona (Spain)',
+		'Population',
+		'.0f',
+		'residents');
+
+	createChartContainer(containerAverageTouristOccupancyColumnVerticalID, 'col');
+	columnVerticalChart(containerAverageTouristOccupancyColumnVerticalID,
+		'Average touristic rental accommodations in Barcelona (Spain)',
+		'Accommodations (Entire apartment or rooms)',
+		'.0f',
+		'accommodations');
+
+	requestData(1, years,function(data) {
+		updateChartsTypeColumnVertical(containerAverageRentalPriceColumnVerticalID, data, 'average_rental');
+		updateChartsTypeBasicLine(containerBasicLineAverageRentalPricePerYearsID, data, 'average_rental_per_years');
+		// updateCardDeck('average-rental-price-years', data);
 	});
-	charts[containerAverageRentalPrice].showLoading();
 
-	var containerAverageOccupancy = 'average-occupancy';
-	charts[containerAverageOccupancy] = Highcharts.chart(containerAverageOccupancy, {
-		chart: {
-			type: 'column',
-		},
-		title: {
-			text: 'Average occupancy in Barcelona (Spain)'
-		},
-		subtitle: {
-			text: ''
-		},
-		xAxis: {
-			categories: [],
-			crosshair: true
-		},
-		yAxis: {
-			min: 0,
-			title: {
-				text: 'Population'
-			}
-		},
-		tooltip: {
-			headerFormat: '<span style="font-size:10px">{point.key}</span><table>',
-			pointFormat: '<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
-				'<td style="padding:0"><b>{point.y}</b></td></tr>',
-			footerFormat: '</table>',
-			shared: true,
-			useHTML: true
-		},
-		plotOptions: {
-			column: {
-				pointPadding: 0.2,
-				borderWidth: 0
-			}
-		},
-		series: [],
-		credits: {
-			enabled: false
-		},
+	requestData(2, years,function(data) {
+		updateChartsTypeColumnVertical(containerAverageOccupancyColumnVerticalID, data, 'average_residents');
+		updateChartsTypeBasicLine(containerBasicLineResidentsPerYearsID, data, 'residents_per_years');
 	});
-	charts[containerAverageOccupancy].showLoading();
 
-
-	var containerAverageTouristOccupancy = 'average-tourist-occupancy';
-	charts[containerAverageTouristOccupancy] = Highcharts.chart(containerAverageTouristOccupancy, {
-		chart: {
-			type: 'column'
-		},
-		title: {
-			text: 'Average occupancy in Barcelona (Spain)'
-		},
-		subtitle: {
-			text: ''
-		},
-		xAxis: {
-			categories: [],
-			crosshair: true
-		},
-		yAxis: {
-			min: 0,
-			title: {
-				text: 'Population'
-			}
-		},
-		tooltip: {
-			headerFormat: '<span style="font-size:10px">{point.key}</span><table>',
-			pointFormat: '<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
-				'<td style="padding:0"><b>{point.y}</b></td></tr>',
-			footerFormat: '</table>',
-			shared: true,
-			useHTML: true
-		},
-		plotOptions: {
-			column: {
-				pointPadding: 0.2,
-				borderWidth: 0
-			}
-		},
-		series: [],
-		credits: {
-			enabled: false
-		},
+	requestData(3, years,function(data){
+		updateChartsTypeColumnVertical(containerAverageTouristOccupancyColumnVerticalID, data, 'average_tourist_occupancy');
+		updateChartsTypeBasicLine(containerBasicLineAccommodationsRentalsPerYearsID, data, 'tourist_rental_accommodations_per_years');
 	});
-	charts[containerAverageTouristOccupancy].showLoading();
+};
 
-	requestDataAverageRentalPrice(containerAverageRentalPrice, 1, function(id, data){
-		updateChartsTypeColumn(id, data);
-		updateCardDeck('average-rental-price-years', data);
-	});
-	requestDataAverageRentalPrice(containerAverageOccupancy, 2, updateChartsTypeColumn);
-	requestDataAverageRentalPrice(containerAverageTouristOccupancy, 3, updateChartsTypeColumn);
-});
