@@ -49,12 +49,12 @@ function reloadCharts(checkedOptions) {
 	if (typeSelected === HISTORIC_DATA) {
 		renderHistoricData(checkedOptions);
 	} else if (typeSelected === SIMPLE_DATA) {
-
+		renderSimpleData(checkedOptions);
 	}
 };
 
-function createChartContainer(id) {
-	$(`#${CHART_CONTAINER}`).append(
+function createChartContainer(containerId, id) {
+	$(`#${containerId}`).append(
 		$('<div/>', {
 			"class": 'row py-2'
 		}).append($('<div/>', {
@@ -86,6 +86,19 @@ function createCol(id, rowId, col) {
 	);
 };
 
+function createSection(sectionId, title) {
+	$(`#${CHART_CONTAINER}`).append(
+		$('<div/>', {
+			"class": 'd-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom'
+		}).append($('<h3/>', {
+			"text": title
+		}))).append($('<div/>', {
+			"id": sectionId,
+			"class": ""
+		})
+	);
+}
+
 function renderHistoricData(years) {
 	createRow('single-charts');
 	createCol(containerBasicLineAverageRentalPricePerYearsID, 'single-charts', 'col-4');
@@ -109,21 +122,21 @@ function renderHistoricData(years) {
 		'.0f',
 		'accommodations');
 
-	createChartContainer(containerAverageRentalPriceColumnVerticalID, 'col');
+	createChartContainer(CHART_CONTAINER, containerAverageRentalPriceColumnVerticalID, 'col');
 	columnVerticalChart(containerAverageRentalPriceColumnVerticalID,
 		'Average rental price in Barcelona (Spain)',
 		'Price in Euros',
 		'.1f',
 		'€');
 
-	createChartContainer(containerAverageOccupancyColumnVerticalID, 'col');
+	createChartContainer(CHART_CONTAINER, containerAverageOccupancyColumnVerticalID, 'col');
 	columnVerticalChart(containerAverageOccupancyColumnVerticalID,
 		'Average occupancy in Barcelona (Spain)',
 		'Population',
 		'.0f',
 		'residents');
 
-	createChartContainer(containerAverageTouristOccupancyColumnVerticalID, 'col');
+	createChartContainer(CHART_CONTAINER, containerAverageTouristOccupancyColumnVerticalID, 'col');
 	columnVerticalChart(containerAverageTouristOccupancyColumnVerticalID,
 		'Average touristic rental accommodations in Barcelona (Spain)',
 		'Accommodations (Entire apartment or rooms)',
@@ -142,8 +155,27 @@ function renderHistoricData(years) {
 	});
 
 	requestData(3, years,function(data){
-		updateChartsTypeColumnVertical(containerAverageTouristOccupancyColumnVerticalID, data, 'average_tourist_occupancy');
-		updateChartsTypeBasicLine(containerBasicLineAccommodationsRentalsPerYearsID, data, 'tourist_rental_accommodations_per_years');
+		updateChartsTypeColumnVertical(containerAverageTouristOccupancyColumnVerticalID, data, 'tourist_rental_per_neighborhood');
+		updateChartsTypeBasicLine(containerBasicLineAccommodationsRentalsPerYearsID, data, 'tourist_rentals_per_years');
 	});
 };
 
+function renderSimpleData(years) {
+	years.forEach(function (value) {
+		createSection(`section-${value}`, value);
+	});
+
+	years.forEach(function (value) {
+		createChartContainer(`section-${value}`, `donut-chart-touristic-rentals-concentration-${value}`, 'col');
+		donutChart(`donut-chart-touristic-rentals-concentration-${value}`,
+			'Concentration of touristic rentals accommodations in Barcelona (Spain)',
+			'Districts',
+			'Neighborhoods');
+	});
+
+	requestData(3, years,function(data){
+		years.forEach(function (value) {
+			updateDonutChart(`donut-chart-touristic-rentals-concentration-${value}`, data, 'tourist_rental_accommodations_per_years', value);
+		});
+	});
+};

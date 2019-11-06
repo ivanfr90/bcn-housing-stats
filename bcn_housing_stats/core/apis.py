@@ -76,37 +76,39 @@ class ResourceDataAPI(APIView):
                 categories, series = RentalPriceService.get_average_rentals()
                 data_response.update({'average_rental': {
                     'categories': categories,
-                    'series': series,}
-                })
+                    'series': series
+                }})
                 categories, series = RentalPriceService.get_average_rental_by_years()
                 data_response.update({'average_rental_per_years': {
                     'categories': categories,
-                    'series': series,}
-                })
+                    'series': series
+                }})
             elif type_slug == ResourceTypeSLUGS.AVERAGE_OCCUPANCY.value:
                 AverageResidentsService.initialize_data(years=years, offset=200)
                 categories, series = AverageResidentsService.get_average_residents()
                 data_response.update({'average_residents': {
                     'categories': categories,
-                    'series': series, }
-                })
+                    'series': series
+                }})
                 categories, series = AverageResidentsService.get_residents_per_year()
                 data_response.update({'residents_per_years': {
                     'categories': categories,
-                    'series': series, }
-                })
+                    'series': series
+                }})
             elif type_slug == ResourceTypeSLUGS.TOURIST_OCCUPANCY.value:
                 TouristRentalsService.initialize_data(years=years, offset=200)
-                categories, series = TouristRentalsService.get_average_occupancy_districts()
-                data_response.update({'average_tourist_occupancy': {
+                categories, series = TouristRentalsService.get_average_rentals_neighborhood()
+                data_response.update({'tourist_rental_per_neighborhood': {
                     'categories': categories,
-                    'series': series, }
-                })
+                    'series': series
+                }})
                 categories, series = TouristRentalsService.get_rentals_accommodations_per_years()
-                data_response.update({'tourist_rental_accommodations_per_years': {
+                data_response.update({'tourist_rentals_per_years': {
                     'categories': categories,
-                    'series': series, }
-                })
+                    'series': series
+                }})
+                values = TouristRentalsService.get_average_rentals_grouped_district()
+                data_response.update({'tourist_rental_accommodations_per_years': values})
         except ResourceType.DoesNotExist as e:
             logger.info('ResourceData does not exists', exc_info=True, extra={'exception': e})
             return Response(status=status.HTTP_404_NOT_FOUND)

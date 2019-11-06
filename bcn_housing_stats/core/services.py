@@ -305,18 +305,8 @@ class TouristRentalsService:
         duration = time.time() - start_time
         print(f"Process time: {duration} seconds")
 
-    # @classmethod
-    # def get_average_occupancy_neighborhood(cls) -> tuple:
-    #     if not hasattr(cls, 'data'):
-    #         raise Exception("Method initialize_data() not called. Class needs initialization")
-    #
-    #     return DataService.normalize_data(
-    #         cls.data,
-    #         category_attr=lambda item: f'{getattr(item, "name_district")} / {getattr(item, "name_neighborhood")}',
-    #         value_attr=lambda item: getattr(item, "average_occupancy"))
-
     @classmethod
-    def get_average_occupancy_districts(cls) -> tuple:
+    def get_average_rentals_neighborhood(cls) -> tuple:
         if not hasattr(cls, 'data'):
             raise Exception("Method initialize_data() not called. Class needs initialization")
 
@@ -328,6 +318,21 @@ class TouristRentalsService:
             data,
             category_attr=lambda item: f'{getattr(item, "name_district")} / {getattr(item, "name_neighborhood")}',
             value_attr=lambda item: getattr(item, "total_apartments"))
+
+    @classmethod
+    def get_average_rentals_grouped_district(cls) -> tuple:
+        if not hasattr(cls, 'data'):
+            raise Exception("Method initialize_data() not called. Class needs initialization")
+
+        data = []
+        for year, item in cls.data:
+            data.append((year, [*cls._unify_district_neighborhood_data(item)]))
+
+        grouped_by_district = []
+        for year, item in data:
+            grouped_by_district.append({'year': year, 'serie': [*cls._group_by_district(item)]})
+
+        return grouped_by_district
 
     @classmethod
     def get_rentals_accommodations_per_years(cls) -> list:
@@ -398,6 +403,31 @@ class TouristRentalsService:
             temp_data_dict[key] = average_occupancy
 
         return temp_data_dict.values()
+
+    @staticmethod
+    def _group_by_district(data: list) -> list:
+        data_district_dict = dict()
+        for item in data:
+            name_district = f'{item.name_district}'
+            if name_district in data_district_dict:
+                dict_items = data_district_dict[name_district]
+                dict_items['categories'].append(item.name_neighborhood)
+                dict_items['data'].append(item.total_apartments)
+            else:
+                data_district_dict[name_district] = {
+                    'categories': [item.name_neighborhood],
+                    'data': [item.total_apartments]
+                }
+
+        temp_data_list = []
+        for key, value in data_district_dict.items():
+            temp_data_list.append({
+                'name': key,
+                'categories': value['categories'],
+                'data': value['data']
+            })
+
+        return temp_data_list
 
 
 class DataService:

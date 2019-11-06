@@ -12,6 +12,7 @@ var containerAverageTouristOccupancyColumnVerticalID = 'average-tourist-occupanc
 // charts function declarations
 var columnVerticalChart;
 var basicLine;
+var donutChart;
 
 columnVerticalChart = function(containerId, title, yAxisTitle, format, units) {
 	charts[containerId] = Highcharts.chart(containerId, {
@@ -103,6 +104,72 @@ basicLine = function (containerId, title, yAxisTitle, format, units) {
 	charts[containerId].showLoading();
 };
 
+
+donutChart = function (containerId, title, titleSeries, titleSubSeries) {
+	charts[containerId] = Highcharts.chart(containerId, {
+		chart: {
+			type: 'pie'
+		},
+		title: {
+			text: title
+		},
+		plotOptions: {
+			pie: {
+				shadow: false,
+				center: ['50%', '50%']
+			}
+		},
+		tooltip: {
+			valueSuffix: '%'
+		},
+		series: [{
+			name: titleSeries,
+			data: [],
+			size: '60%',
+			dataLabels: {
+				formatter: function () {
+					return this.y > 5 ? this.point.name : null;
+				},
+				color: '#ffffff',
+				distance: -30
+			}
+		}, {
+			name: titleSubSeries,
+			data: [],
+			size: '80%',
+			innerSize: '60%',
+			dataLabels: {
+				formatter: function () {
+					// display only if larger than 1
+					return this.y > 1 ? '<b>' + this.point.name + ':</b> ' +
+						this.y + '%' : null;
+				}
+			},
+			id: 'versions'
+		}],
+		responsive: {
+			rules: [{
+				condition: {
+					maxWidth: 400
+				},
+				chartOptions: {
+					series: [{
+					}, {
+						id: 'versions',
+						dataLabels: {
+							enabled: false
+						}
+					}]
+				}
+			}]
+		},
+		credits: {
+			enabled: false
+		},
+	});
+	charts[containerId].showLoading();
+}
+
 // charts functions
 
 function updateChartsTypeColumnVertical(id, data, key) {
@@ -133,6 +200,72 @@ function updateChartsTypeBasicLine(id, data, key) {
 	charts[id].xAxis[0].update({
 		categories: data.categories
 	}, true);
+
+	charts[id].hideLoading();
+};
+
+function updateDonutChart(id, data, key, year) {
+	data = data[key];
+	var series = [];
+	var chartColors = Highcharts.getOptions().colors;
+	var chartCategories = [];
+	var chartData = [];
+	var total = 0;
+
+	for (var i=0; i<data.length; i++) {
+		if (data[i]['year'] == year) {
+			series = data[i].serie;
+			break;
+		}
+	};
+
+	series.forEach(function (item, key) {
+		total += item['data'].reduce((a, b) => a + b, 0);
+	});
+
+	series.forEach(function (item, key) {
+		item['data'].forEach(function (part, index) {
+			item['data'][index] = part * 100 / total;
+		});
+	});
+
+	series.forEach(function (item, key) {
+		chartCategories.push(item['name']);
+		chartData.push({
+			y: item['data'].reduce((a, b) => a + b, 0),
+			color: chartColors[key],
+			drilldown: item
+		})
+	});
+
+	var browserData = [];
+	var versionsData = [];
+	var drillDataLen;
+	var brightness;
+
+	// Build the data arrays
+	for (var i = 0; i < chartData.length; i += 1) {
+		// add browser data
+		browserData.push({
+			name: chartCategories[i],
+			y: parseFloat(chartData[i].y.toFixed(2)),
+			color: chartData[i].color
+		});
+
+		// add version data
+		drillDataLen = chartData[i].drilldown.data.length;
+		for (var j = 0; j < drillDataLen; j += 1) {
+			brightness = 0.2 - (j / drillDataLen) / 5;
+			versionsData.push({
+				name: chartData[i].drilldown.categories[j],
+				y: parseFloat(chartData[i].drilldown.data[j].toFixed(2)) ,
+				color: Highcharts.Color(chartData[i].color).brighten(brightness).get()
+			});
+		}
+	}
+
+	charts[id].series[0].setData(browserData);
+	charts[id].series[1].setData(versionsData);
 
 	charts[id].hideLoading();
 };
