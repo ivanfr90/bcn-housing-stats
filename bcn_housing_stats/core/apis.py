@@ -28,6 +28,7 @@ class ResourceTypeAPI(APIView):
         serializer = ResourceTypeSerializer(resource_type)
         return Response(serializer.data)
 
+
 class ResourceTypeListAPI(APIView):
 
     def get(self, request):
@@ -35,6 +36,7 @@ class ResourceTypeListAPI(APIView):
         resources_types = ResourceType.objects.all()
         serializer = ResourceTypeSerializer(resources_types, many=True)
         return Response(serializer.data)
+
 
 class ResourceAPI(APIView):
 

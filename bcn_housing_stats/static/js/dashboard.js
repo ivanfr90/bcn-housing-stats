@@ -4,22 +4,6 @@ $(document).ready(function() {
 	(loadAndRender)();
 });
 
-
-function updateCardDeck2(id, data) {
-	try {
-		$.each(data.average_per_years, function(i, value) {
-			$('#' + id).append(
-				$('<div/>', {
-					"class": 'card-text font-weight-bold',
-					text: `${parseFloat(value.avg).toFixed(2)} euros (${value.year})`
-				})
-			);
-		});
-	} catch (e) {
-		$('#' + id).append($('<p/>', {text: `${ERROR_LOADING_DATA}`}));
-	}
-};
-
 function loadAndRender() {
 	var selector = '';
 	if (typeSelected === HISTORIC_DATA) {

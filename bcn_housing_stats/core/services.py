@@ -111,7 +111,6 @@ class RentalPriceService:
         averages = cls.get_average_rental_by_years()[1]
         return DataService.growth_rate(averages)
 
-
     @staticmethod
     def _transform_json_data(json_data: json) -> list:
         data = []
@@ -341,7 +340,7 @@ class TouristRentalsService:
         print(f"Process time: {duration} seconds")
 
     @classmethod
-    def get_plain_data(cls) -> dict:
+    def get_plain_data(cls) -> list:
         if not hasattr(cls, 'data'):
             raise Exception("Method initialize_data() not called. Class needs initialization")
 
@@ -477,7 +476,7 @@ class TouristRentalsService:
         return temp_data_dict.values()
 
     @staticmethod
-    def _group_by_accommodation_type(data: list) -> dict:
+    def _group_by_accommodation_type(data: list) -> list:
         """
         Group data by accommodation_type attribute
         :param data:

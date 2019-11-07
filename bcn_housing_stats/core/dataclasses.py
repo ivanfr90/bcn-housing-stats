@@ -40,20 +40,22 @@ class AverageResidents:
         self.average_occupancy = float(average_occupancy)
         self.year = int(year)
 
+
 class TouristAccommodation:
 
     def __init__(self,
                  name_district: str,
                  name_neighborhood: str,
-                 accommodation_type: str="",
-                 price: str="0",
-                 availability: str= "0"
+                 accommodation_type: str = "",
+                 price: str = "0",
+                 availability: str = "0"
                  ):
         self.name_district = name_district
         self.name_neighborhood = name_neighborhood
         self.accommodation_type = accommodation_type
         self.price = float(price)
         self.availability = int(availability)
+
 
 class TouristAccommodationAvg:
 
