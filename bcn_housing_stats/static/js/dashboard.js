@@ -1,4 +1,3 @@
-
 // start function
 var typeSelected = DEFAULT_TO_INIT;
 $(document).ready(function() {
@@ -6,7 +5,7 @@ $(document).ready(function() {
 });
 
 
-function updateCardDeck(id, data) {
+function updateCardDeck2(id, data) {
 	try {
 		$.each(data.average_per_years, function(i, value) {
 			$('#' + id).append(
@@ -20,7 +19,6 @@ function updateCardDeck(id, data) {
 		$('#' + id).append($('<p/>', {text: `${ERROR_LOADING_DATA}`}));
 	}
 };
-
 
 function loadAndRender() {
 	var selector = '';
@@ -36,9 +34,6 @@ function loadAndRender() {
 
 	cleanContainerChars();
 	reloadCharts(checkedOptions);
-
-	console.log(typeSelected);
-	console.log(checkedOptions);
 };
 
 function cleanContainerChars() {
@@ -97,9 +92,27 @@ function createSection(sectionId, title) {
 			"class": ""
 		})
 	);
-}
+};
+
+function updateCardDecksGrowthRate(id, data, key) {
+	if (data[key] != 0) {
+		$('#' + id).each(function () {
+		var $this = $(this);
+			jQuery({ Counter: 0 }).animate({ Counter: data[key] }, {
+				duration: 1000,
+				easing: 'swing',
+				step: function () {
+					$this.text(`${this.Counter.toFixed(2)} %`);
+			}
+			});
+		});
+	} else {
+		$('#' + id).text('-');
+	}
+};
 
 function renderHistoricData(years) {
+
 	createRow('single-charts');
 	createCol(containerBasicLineAverageRentalPricePerYearsID, 'single-charts', 'col-4');
 	basicLine(containerBasicLineAverageRentalPricePerYearsID,
@@ -144,17 +157,20 @@ function renderHistoricData(years) {
 		'accommodations');
 
 	requestData(1, years,function(data) {
+		updateCardDecksGrowthRate(cardDeckGrowthRateHousingRentalPrice, data, 'growth_rate');
 		updateChartsTypeColumnVertical(containerAverageRentalPriceColumnVerticalID, data, 'average_rental');
 		updateChartsTypeBasicLine(containerBasicLineAverageRentalPricePerYearsID, data, 'average_rental_per_years');
 		// updateCardDeck('average-rental-price-years', data);
 	});
 
 	requestData(2, years,function(data) {
+		updateCardDecksGrowthRate(cardDeckGrowthRateResidents, data, 'growth_rate');
 		updateChartsTypeColumnVertical(containerAverageOccupancyColumnVerticalID, data, 'average_residents');
 		updateChartsTypeBasicLine(containerBasicLineResidentsPerYearsID, data, 'residents_per_years');
 	});
 
 	requestData(3, years,function(data){
+		updateCardDecksGrowthRate(cardDeckGrowthRateTouristRentals, data, 'growth_rate');
 		updateChartsTypeColumnVertical(containerAverageTouristOccupancyColumnVerticalID, data, 'tourist_rental_per_neighborhood');
 		updateChartsTypeBasicLine(containerBasicLineAccommodationsRentalsPerYearsID, data, 'tourist_rentals_per_years');
 	});
@@ -171,11 +187,18 @@ function renderSimpleData(years) {
 			'Concentration of touristic rentals accommodations in Barcelona (Spain)',
 			'Districts',
 			'Neighborhoods');
+
+		createChartContainer(`section-${value}`, `pie-chart-touristic-rentals-type-${value}`, 'col');
+		pieChart(`pie-chart-touristic-rentals-type-${value}`,
+			'Touristic rentals accommodations types in Barcelona (Spain)',
+			'Type');
 	});
 
 	requestData(3, years,function(data){
 		years.forEach(function (value) {
 			updateDonutChart(`donut-chart-touristic-rentals-concentration-${value}`, data, 'tourist_rental_accommodations_per_years', value);
+			updatePieChart(`pie-chart-touristic-rentals-type-${value}`, data, 'tourist_rental_accommodations_per_type', value);
 		});
 	});
 };
+

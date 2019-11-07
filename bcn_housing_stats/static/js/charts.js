@@ -1,6 +1,11 @@
 
 var charts = {};
 
+// chard decks id
+var cardDeckGrowthRateHousingRentalPrice = 'growth-rate-housing-rental-price';
+var cardDeckGrowthRateResidents = 'growth-rate-residents';
+var cardDeckGrowthRateTouristRentals = 'growth-rate-tourist-rentals';
+
 // charts containers id
 var containerBasicLineAverageRentalPricePerYearsID = 'average-rental-price-per-years-basic-line';
 var containerBasicLineAccommodationsRentalsPerYearsID = 'accommodations-per-year-basic-line';
@@ -13,6 +18,7 @@ var containerAverageTouristOccupancyColumnVerticalID = 'average-tourist-occupanc
 var columnVerticalChart;
 var basicLine;
 var donutChart;
+var pieChart;
 
 columnVerticalChart = function(containerId, title, yAxisTitle, format, units) {
 	charts[containerId] = Highcharts.chart(containerId, {
@@ -115,6 +121,7 @@ donutChart = function (containerId, title, titleSeries, titleSubSeries) {
 		},
 		plotOptions: {
 			pie: {
+				allowPointSelect: true,
 				shadow: false,
 				center: ['50%', '50%']
 			}
@@ -168,16 +175,63 @@ donutChart = function (containerId, title, titleSeries, titleSubSeries) {
 		},
 	});
 	charts[containerId].showLoading();
-}
+};
+
+pieChart = function (containerId, title, titleSeries) {
+	charts[containerId] = Highcharts.chart(containerId, {
+		chart: {
+			plotBackgroundColor: null,
+			plotBorderWidth: null,
+			plotShadow: false,
+			type: 'pie'
+		},
+		title: {
+			text: title
+		},
+		tooltip: {
+			pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b>'
+		},
+		plotOptions: {
+			pie: {
+				allowPointSelect: true,
+				cursor: 'pointer',
+				dataLabels: {
+					enabled: true,
+					format: '<b>{point.name}</b>: {point.percentage:.1f} %',
+					connectorColor: 'silver'
+				},
+				colors: Highcharts.map(Highcharts.getOptions().colors, function (color) {
+					return {
+						radialGradient: {
+							cx: 0.5,
+							cy: 0.3,
+							r: 0.7
+						},
+						stops: [
+							[0, color],
+							[1, Highcharts.Color(color).brighten(-0.3).get('rgb')] // darken
+						]
+					};
+				})
+			}
+		},
+		series: [{
+			name: titleSeries,
+			data: []
+		}]
+	});
+	charts[containerId].showLoading();
+};
+
 
 // charts functions
 
 function updateChartsTypeColumnVertical(id, data, key) {
 	data = data[key];
-	$.each(data.series, function(i, serie) {
+	data.series.forEach(function(seriesItem) {
 		charts[id].addSeries({
-			name: serie.year,
-			data: serie.values
+			name: seriesItem.year,
+			data: seriesItem.values
 		}, false);
 	});
 
@@ -191,8 +245,8 @@ function updateChartsTypeColumnVertical(id, data, key) {
 function updateChartsTypeBasicLine(id, data, key) {
 	data = data[key];
 	var dataSeries = [];
-	$.each(data.series, function(i, serie) {
-		dataSeries.push(parseFloat(serie.value.toFixed(2)))
+	data.series.forEach(function(seriesItem) {
+		dataSeries.push(parseFloat(seriesItem.value.toFixed(2)))
 	});
 
 	charts[id].series[0].setData(dataSeries);
@@ -214,16 +268,16 @@ function updateDonutChart(id, data, key, year) {
 
 	for (var i=0; i<data.length; i++) {
 		if (data[i]['year'] == year) {
-			series = data[i].serie;
+			series = data[i].series;
 			break;
 		}
 	};
 
-	series.forEach(function (item, key) {
+	series.forEach(function (item) {
 		total += item['data'].reduce((a, b) => a + b, 0);
 	});
 
-	series.forEach(function (item, key) {
+	series.forEach(function (item) {
 		item['data'].forEach(function (part, index) {
 			item['data'][index] = part * 100 / total;
 		});
@@ -269,3 +323,36 @@ function updateDonutChart(id, data, key, year) {
 
 	charts[id].hideLoading();
 };
+
+function updatePieChart(id, data, key, year) {
+	data = data[key];
+	var series = [];
+	var dataSeries = [];
+	var total = 0;
+
+	for (var i=0; i<data.length; i++) {
+		if (data[i]['year'] == year) {
+			series = data[i].series;
+			break;
+		}
+	};
+
+	series.forEach(function (item) {
+		total += item['value'];
+	});
+
+	series.forEach(function (item) {
+		item['value'] = item['value'] * 100 / total;
+	});
+
+	series.forEach(function(seriesItem) {
+		dataSeries.push({
+			'name': seriesItem['name'],
+			'y': parseFloat(seriesItem.value.toFixed(2))
+		});
+	});
+
+	charts[id].series[0].setData(dataSeries);
+
+	charts[id].hideLoading();
+}

@@ -40,7 +40,7 @@ class AverageResidents:
         self.average_occupancy = float(average_occupancy)
         self.year = int(year)
 
-class TouristOccupancy:
+class TouristAccommodation:
 
     def __init__(self,
                  name_district: str,

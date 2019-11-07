@@ -57,7 +57,7 @@
             {% for year in years %}
               <li class="nav-item">
                 <div class="custom-control custom-switch">
-                  <input type="checkbox" class="custom-control-input" id="simple-data-year-{{ year }}" name="simple-data-year" value="{{ year }}">
+                  <input type="checkbox" class="custom-control-input" id="simple-data-year-{{ year }}" name="simple-data-year" value="{{ year }}" {% if forloop.counter == 1 %} checked {% endif %}>
                   <label class="custom-control-label" for="simple-data-year-{{ year }}">{% blocktrans %} Year {{ year }}{% endblocktrans %}</label>
                 </div>
               </li>

@@ -10,10 +10,22 @@
   <div class="row">
     <div class="col">
       <div class="card-deck">
-        <div class="card text-white bg-danger mb-3">
-          <div class="card-body">
-            <h5 class="card-title ">Average rental price</h5>
-            <div id="average-rental-price-years">{# javascript content #}</div>
+        <div class="card text-white text-right bg-warning mb-3">
+          <div class="card-body d-flex flex-column justify-content-between">
+            <h5 class="card-title font-weight-bold">{% trans "Growth rate Housing rental price" %}</h5>
+            <h1 id="growth-rate-housing-rental-price">-</h1>
+          </div>
+        </div>
+        <div class="card text-white text-right bg-info mb-3">
+          <div class="card-body d-flex flex-column justify-content-between">
+            <h5 class="card-title font-weight-bold">{% trans "Growth rate Residents" %}</h5>
+            <h1 id="growth-rate-residents">-</h1>
+          </div>
+        </div>
+        <div class="card text-white text-right bg-danger mb-3">
+          <div class="card-body d-flex flex-column justify-content-between">
+            <h5 class="card-title font-weight-bold">{% trans "Growth rate Tourist Rentals" %}</h5>
+            <h1 id="growth-rate-tourist-rentals">-</h1>
           </div>
         </div>
       </div>

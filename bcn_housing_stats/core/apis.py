@@ -86,6 +86,8 @@ class ResourceDataAPI(APIView):
                         'categories': categories,
                         'series': series
                     }})
+                    growth_rate = RentalPriceService.get_average_growth_rate()
+                    data_response.update({'growth_rate': growth_rate})
                 else:
                     serializer = AverageRentalPriceSerializer(RentalPriceService.get_plain_data(), many=True)
                     data_response = {'data': serializer.data}
@@ -102,6 +104,8 @@ class ResourceDataAPI(APIView):
                         'categories': categories,
                         'series': series
                     }})
+                    growth_rate = AverageResidentsService.get_average_growth_rate()
+                    data_response.update({'growth_rate': growth_rate})
                 else:
                     serializer = AverageResidentsSerializer(AverageResidentsService.get_plain_data(), many=True)
                     data_response = {'data': serializer.data}
@@ -120,6 +124,12 @@ class ResourceDataAPI(APIView):
                     }})
                     values = TouristRentalsService.get_average_rentals_grouped_district()
                     data_response.update({'tourist_rental_accommodations_per_years': values})
+
+                    values = TouristRentalsService.get_average_rentals_grouped_type_accommodation()
+                    data_response.update({'tourist_rental_accommodations_per_type': values})
+
+                    growth_rate = TouristRentalsService.get_average_growth_rate()
+                    data_response.update({'growth_rate': growth_rate})
                 else:
                     serializer = TouristOccupancySerializer(TouristRentalsService.get_plain_data(), many=True)
                     data_response = {'data': serializer.data}

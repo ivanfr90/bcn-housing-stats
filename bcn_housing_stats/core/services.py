@@ -13,12 +13,11 @@ from .constants import (
     AVG_RENTAL_PRICE,
     AVG_RENTAL_PRICE_VALUE_PRICE_NA,
     AVG_RESIDENTS, TOURIST_OCCUPANCY)
-from .dataclasses import AverageRentalPrice, AverageResidents, TouristOccupancy, \
+from .dataclasses import AverageRentalPrice, AverageResidents, TouristAccommodation, \
     TouristAccommodationAvg
 from .models import Resource
 
 logger = logging.getLogger(__name__)
-
 
 
 class RentalPriceService:
@@ -86,7 +85,7 @@ class RentalPriceService:
             value_attr=lambda item: getattr(item, "price"))
 
     @classmethod
-    def get_average_rental_by_years(cls) -> list:
+    def get_average_rental_by_years(cls) -> tuple:
         if not hasattr(cls, 'data'):
             raise Exception("Method initialize_data() not called. Class needs initialization")
 
@@ -103,6 +102,15 @@ class RentalPriceService:
             })
 
         return categories, averages
+
+    @classmethod
+    def get_average_growth_rate(cls):
+        if not hasattr(cls, 'data'):
+            raise Exception("Method initialize_data() not called. Class needs initialization")
+
+        averages = cls.get_average_rental_by_years()[1]
+        return DataService.growth_rate(averages)
+
 
     @staticmethod
     def _transform_json_data(json_data: json) -> list:
@@ -219,7 +227,7 @@ class AverageResidentsService:
         print(f"Process time: {duration} seconds")
 
     @classmethod
-    def get_plain_data(cls) -> dict:
+    def get_plain_data(cls) -> list:
         if not hasattr(cls, 'data'):
             raise Exception("Method initialize_data() not called. Class needs initialization")
 
@@ -239,7 +247,7 @@ class AverageResidentsService:
             value_attr=lambda item: getattr(item, "residents"))
 
     @classmethod
-    def get_residents_per_year(cls) -> list:
+    def get_residents_per_year(cls) -> tuple:
         if not hasattr(cls, 'data'):
             raise Exception("Method initialize_data() not called. Class needs initialization")
 
@@ -255,6 +263,14 @@ class AverageResidentsService:
             })
 
         return categories, averages
+
+    @classmethod
+    def get_average_growth_rate(cls):
+        if not hasattr(cls, 'data'):
+            raise Exception("Method initialize_data() not called. Class needs initialization")
+
+        averages = cls.get_residents_per_year()[1]
+        return DataService.growth_rate(averages)
 
     @staticmethod
     def _transform_json_data(json_data: json):
@@ -280,7 +296,6 @@ class AverageResidentsService:
             return average_occupancy
         except Exception as e:
             logger.error(f'An error reading transform data', exc_info=True, extra={'exception': e})
-
 
 
 class TouristRentalsService:
@@ -342,7 +357,7 @@ class TouristRentalsService:
 
         data = []
         for year, item in cls.data:
-            data.append((year, [*cls._unify_district_neighborhood_data(item)]))
+            data.append((year, [*cls._group_by_district_neighborhood(item)]))
 
         return DataService.normalize_data(
             data,
@@ -350,28 +365,39 @@ class TouristRentalsService:
             value_attr=lambda item: getattr(item, "total_apartments"))
 
     @classmethod
-    def get_average_rentals_grouped_district(cls) -> tuple:
+    def get_average_rentals_grouped_district(cls) -> list:
         if not hasattr(cls, 'data'):
             raise Exception("Method initialize_data() not called. Class needs initialization")
 
         data = []
         for year, item in cls.data:
-            data.append((year, [*cls._unify_district_neighborhood_data(item)]))
+            data.append((year, [*cls._group_by_district_neighborhood(item)]))
 
         grouped_by_district = []
         for year, item in data:
-            grouped_by_district.append({'year': year, 'serie': [*cls._group_by_district(item)]})
+            grouped_by_district.append({'year': year, 'series': [*cls._group_by_district(item)]})
 
         return grouped_by_district
 
     @classmethod
-    def get_rentals_accommodations_per_years(cls) -> list:
+    def get_average_rentals_grouped_type_accommodation(cls) -> list:
+        if not hasattr(cls, 'data'):
+            raise Exception("Method initialize_data() not called. Class needs initialization")
+
+        grouped_by_type = []
+        for year, item in cls.data:
+            grouped_by_type.append({'year': year, 'series': cls._group_by_accommodation_type(item)})
+
+        return grouped_by_type
+
+    @classmethod
+    def get_rentals_accommodations_per_years(cls) -> tuple:
         if not hasattr(cls, 'data'):
             raise Exception("Method initialize_data() not called. Class needs initialization")
 
         data = []
         for year, item in cls.data:
-            data.append((year, [*cls._unify_district_neighborhood_data(item)]))
+            data.append((year, [*cls._group_by_district_neighborhood(item)]))
 
         categories = []
         averages = []
@@ -386,6 +412,22 @@ class TouristRentalsService:
 
         return categories, averages
 
+    @classmethod
+    def get_average_growth_rate(cls):
+        if not hasattr(cls, 'data'):
+            raise Exception("Method initialize_data() not called. Class needs initialization")
+
+        averages = cls.get_rentals_accommodations_per_years()[1]
+        return DataService.growth_rate(averages)
+
+    @staticmethod
+    def _transform_json_data(json_data: json):
+        data = []
+        if json_data and json_data['success'] is True:
+            for record in json_data['result']['records']:
+                data.append(TouristRentalsService._create_object(record))
+        return data
+
     @staticmethod
     def _transform_dict_data(dict_data_list: list) -> list:
         data = []
@@ -396,7 +438,7 @@ class TouristRentalsService:
     @staticmethod
     def _create_object(dict_data: dict):
         try:
-            tourist_occupancy = TouristOccupancy(
+            tourist_occupancy = TouristAccommodation(
                 dict_data[TOURIST_OCCUPANCY.DISTRICT_NAME],
                 dict_data[TOURIST_OCCUPANCY.NEIGHBORHOOD_NAME],
                 dict_data[TOURIST_OCCUPANCY.ACCOMMODATION_TYPE],
@@ -408,9 +450,9 @@ class TouristRentalsService:
             logger.error(f'An error reading transform data', exc_info=True, extra={'exception': e})
 
     @staticmethod
-    def _unify_district_neighborhood_data(data: list) -> list:
+    def _group_by_district_neighborhood(data: list) -> list:
         """
-        Unify total apartments by district and neighborhood
+        Group total apartments by district and neighborhood
         :param data:
         :return:
         """
@@ -433,6 +475,32 @@ class TouristRentalsService:
             temp_data_dict[key] = average_occupancy
 
         return temp_data_dict.values()
+
+    @staticmethod
+    def _group_by_accommodation_type(data: list) -> dict:
+        """
+        Group data by accommodation_type attribute
+        :param data:
+        :return:
+        """
+        temp_data_dict = dict()
+        for item in data:
+            key = f'{item.accommodation_type}'
+            if key in temp_data_dict:
+                dict_items = temp_data_dict[key]
+                dict_items.append(item)
+            else:
+                temp_data_dict[key] = [item]
+
+        # calculate total apartments of each grouped list
+        temp_data_list = []
+        for key, values in temp_data_dict.items():
+            temp_data_list.append({
+                'name': key,
+                'value': len(values)
+            })
+
+        return temp_data_list
 
     @staticmethod
     def _group_by_district(data: list) -> list:
@@ -461,6 +529,14 @@ class TouristRentalsService:
 
 
 class DataService:
+
+    @staticmethod
+    def growth_rate(data):
+        max_avg_item = max(data, key=lambda x: x['year'])['value']
+        min_avg_item = min(data, key=lambda x: x['year'])['value']
+
+        growth_rate = (pow(max_avg_item / min_avg_item, 1 / len(data)) - 1) * 100
+        return  growth_rate
 
     @staticmethod
     def fetch_data(url: str, offset: int) -> list:
