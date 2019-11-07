@@ -11,7 +11,7 @@ __pycache__/
 .Python
 build/
 develop-eggs/
-dist/
+# dist/
 downloads/
 eggs/
 .eggs/
@@ -231,7 +231,6 @@ Desktop.ini
 $RECYCLE.BIN/
 
 # Windows Installer files
-*.cab
 *.msi
 *.msm
 *.msp
