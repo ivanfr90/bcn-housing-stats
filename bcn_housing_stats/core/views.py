@@ -1,43 +1,8 @@
-from django.shortcuts import render
-
-# Create your views here.
 from django.views.generic import TemplateView
 
 from config.settings.base import ResourceTypeSLUGS
-from .models import Resource
+from .models import Resource, ResourceType
 from .services import RentalPriceService, AverageResidentsService, TouristRentalsService
-
-
-class HomeView(TemplateView):
-    template_name = "core/home.html"
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        year = 2018
-
-        # years = Resource.objects.get_years_by_resource_type(
-        #     ResourceTypeSLUGS.AVERAGE_MONTHLY_RENT.value).values_list('year', flat=True)
-        # AverageRentalPriceService.initialize_data(years=years, offset=200)
-        # categories, value_list = AverageRentalPriceService.get_average_rentals()
-        # average = AverageRentalPriceService.get_total_average_rental()
-
-        # years = Resource.objects.get_years_by_resource_type(
-        #     ResourceTypeSLUGS.AVERAGE_OCCUPANCY.value).values_list('year', flat=True)
-        # AverageResidentsService.initialize_data(years=years, offset=200)
-        # categories, value_list = AverageResidentsService.get_average_occupancy()
-        # average = None
-
-        years = Resource.objects.get_years_by_resource_type(
-            ResourceTypeSLUGS.AVERAGE_TOURIST_OCCUPANCY.value).values_list('year', flat=True)
-        TouristRentalsService.initialize_data(years=years, offset=200)
-        categories, value_list = TouristRentalsService.get_average_occupancy()
-        average = None
-
-        context['categories'] = categories # json.dumps(props, default=json_serial)
-        context['value_list'] = value_list
-        context['average_rental'] = average
-        context['year'] = year
-        return context
 
 class DashBoardView(TemplateView):
     template_name = "core/dashboard.html"
@@ -49,5 +14,86 @@ class DashBoardView(TemplateView):
         return context
 
 
-home_view = HomeView.as_view()
+class DataTablesView(TemplateView):
+    template_name = "core/datatables.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        resource_types = ResourceType.objects.all()
+
+        data = []
+        for resource_type in resource_types:
+            if resource_type.slug == ResourceTypeSLUGS.AVERAGE_MONTHLY_RENT.value:
+                RentalPriceService.initialize_data()
+                categories = ['Concept', 'Disctrict Code', 'District Name', 'Neighborhood Code', 'Neighborhood Name',
+                              'Quarter', 'Price', 'year']
+                values = []
+                for plain_data in RentalPriceService.get_plain_data():
+                    value = []
+
+                    value.append(plain_data.concept)
+                    value.append(plain_data.code_district)
+                    value.append(plain_data.name_district)
+                    value.append(plain_data.code_neighborhood)
+                    value.append(plain_data.name_neighborhood)
+                    value.append(plain_data.quarter)
+                    value.append(plain_data.price)
+                    value.append(plain_data.year)
+
+                    values.append(value)
+
+                data.append({
+                    'resource': resource_type,
+                    'columns': categories,
+                    'values': values
+                })
+            elif resource_type.slug == ResourceTypeSLUGS.AVERAGE_OCCUPANCY.value:
+                AverageResidentsService.initialize_data()
+                categories = ['Disctrict Code', 'District Name', 'Neighborhood Code', 'Neighborhood Name',
+                              'Houses', 'Residents', 'Average Occupancy', 'year']
+                values = []
+                for plain_data in AverageResidentsService.get_plain_data():
+                    value = []
+                    value.append(plain_data.code_district)
+                    value.append(plain_data.name_district)
+                    value.append(plain_data.code_neighborhood)
+                    value.append(plain_data.name_neighborhood)
+                    value.append(plain_data.houses)
+                    value.append(plain_data.residents)
+                    value.append(plain_data.average_occupancy)
+                    value.append(plain_data.year)
+
+                    values.append(value)
+
+                data.append({
+                    'resource': resource_type,
+                    'columns': categories,
+                    'values': values
+                })
+            # elif resource_type.slug == ResourceTypeSLUGS.TOURIST_OCCUPANCY.value:
+            #     TouristRentalsService.initialize_data()
+            #     categories = ['District Name', 'Neighborhood Name',
+            #                   'Accommodation Type', 'Price', 'Availability']
+            #     values = []
+            #     for plain_data in TouristRentalsService.get_plain_data():
+            #         value = []
+            #         value.append(plain_data.name_district)
+            #         value.append(plain_data.name_neighborhood)
+            #         value.append(plain_data.accommodation_type)
+            #         value.append(plain_data.price)
+            #         value.append(plain_data.availability)
+            #
+            #         values.append(value)
+            #
+            #     data.append({
+            #         'resource': resource_type,
+            #         'columns': categories,
+            #         'values': values
+            #     })
+
+        context['resource_types'] = resource_types
+        context['data'] = data
+        return context
+
 dashboard_view = DashBoardView.as_view()
+datatables_view = DataTablesView.as_view()

@@ -2,13 +2,15 @@ from django.urls import path
 
 from .apis import (ResourceListAPI, ResourceAPI, ResourceDataAPI, ResourceTypeAPI, ResourceTypeListAPI)
 from .views import (
-    home_view,
-    dashboard_view)
+    dashboard_view,
+    datatables_view)
 
 app_name = "core"
+
+# urls
 urlpatterns = [
-    path("", view=home_view, name="home"),
-    path("dashboard", view=dashboard_view, name="dashboard")
+    path("", view=dashboard_view, name="dashboard"),
+    path("datatables", view=datatables_view, name="datatables")
 ]
 
 # api endpoints
@@ -21,11 +23,3 @@ apipatterns = [
 ]
 
 urlpatterns += apipatterns
-# Devolver la información del chart
-# /charts/
-
-# filtro por año
-# /charts/TYPE_CHART&year=2018
-
-# todos los años de ese chart
-# /charts/TYPE_CHART

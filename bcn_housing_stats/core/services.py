@@ -66,6 +66,16 @@ class RentalPriceService:
         print(f"Process time: {duration} seconds")
 
     @classmethod
+    def get_plain_data(cls) -> dict:
+        if not hasattr(cls, 'data'):
+            raise Exception("Method initialize_data() not called. Class needs initialization")
+
+        plain_data = []
+        for year, data in cls.data:
+            plain_data.extend(data)
+        return plain_data
+
+    @classmethod
     def get_average_rentals(cls) -> tuple:
         if not hasattr(cls, 'data'):
             raise Exception("Method initialize_data() not called. Class needs initialization")
@@ -209,6 +219,16 @@ class AverageResidentsService:
         print(f"Process time: {duration} seconds")
 
     @classmethod
+    def get_plain_data(cls) -> dict:
+        if not hasattr(cls, 'data'):
+            raise Exception("Method initialize_data() not called. Class needs initialization")
+
+        plain_data = []
+        for year, data in cls.data:
+            plain_data.extend(data)
+        return plain_data
+
+    @classmethod
     def get_average_residents(cls) -> tuple:
         if not hasattr(cls, 'data'):
             raise Exception("Method initialize_data() not called. Class needs initialization")
@@ -304,6 +324,16 @@ class TouristRentalsService:
 
         duration = time.time() - start_time
         print(f"Process time: {duration} seconds")
+
+    @classmethod
+    def get_plain_data(cls) -> dict:
+        if not hasattr(cls, 'data'):
+            raise Exception("Method initialize_data() not called. Class needs initialization")
+
+        plain_data = []
+        for year, data in cls.data:
+            plain_data.extend(data)
+        return plain_data
 
     @classmethod
     def get_average_rentals_neighborhood(cls) -> tuple:

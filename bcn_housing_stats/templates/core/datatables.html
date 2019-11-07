@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load static %}
+
+{% block third-party-css %}
+  <link href="{% static 'dist/css/dataTables.bootstrap4.min.css' %}" rel="stylesheet">
+{% endblock third-party-css %}
+
+{% block third-party-javascript %}
+  <script src="{% static 'dist/js/jquery.dataTables.min.js' %}"></script>
+  <script src="{% static 'dist/js/dataTables.bootstrap4.min.js' %}"></script>
+{% endblock %}
+
+{% block custom-javascript %}
+  <script>
+  $(document).ready(function() {
+      {% for resource_type in resource_types %}
+          console.log(`#table-${ {{ forloop.counter }} }`)
+          $(`#table-${ {{ forloop.counter }} }`).DataTable();
+      {% endfor %}
+    });
+  </script>
+{% endblock %}
+
+{% block content %}
+  <div class="container-fluid">
+    <div class="row py-5">
+      <div class="col">
+        {% for item in data %}
+          <div class="my-5">
+            <h2 class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center">{{ item.resource.name }}</h2>
+            <div class="pb-2 mb-3 border-bottom">
+              <span>{{ item.resource.description }}</span>
+            </div>
+          </div>
+          <table id="table-{{ forloop.counter }}" class="table table-striped table-bordered" style="width:100%">
+            <thead>
+              <tr>
+                {% for column in item.columns %}
+                  <th>{{ column}}</th>
+                {% endfor %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for value in item.values %}
+              <tr>
+                {% for i in value %}
+                    <td>{{ i }}</td>
+                {% endfor %}
+              </tr>
+              {% endfor %}
+            </tbody>
+            <tfoot>
+              <tr>
+                {% for column in item.columns %}
+                  <th>{{ column}}</th>
+                {% endfor %}
+              </tr>
+            </tfoot>
+          </table>
+        {% endfor %}
+
+      </div>
+    </div>
+  </div>
+
+{% endblock content %}

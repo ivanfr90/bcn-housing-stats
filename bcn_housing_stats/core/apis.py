@@ -6,7 +6,8 @@ from rest_framework.views import APIView
 
 from config.settings.base import ResourceTypeSLUGS
 from .models import Resource, ResourceType
-from .serializers import ResourceSerializer, ResourceTypeSerializer
+from .serializers import ResourceSerializer, ResourceTypeSerializer, AverageRentalPriceSerializer, \
+    AverageResidentsSerializer, TouristOccupancySerializer
 from .services import (
     TouristRentalsService,
     RentalPriceService,
@@ -63,6 +64,7 @@ class ResourceDataAPI(APIView):
         logger.info('ResourceDataAPI GET called')
         try:
             years_param = self.request.query_params.get('years', None)
+            flat = self.request.query_params.get('flat', None)
             type_slug = ResourceType.objects.get(pk=resource_type_pk).slug
 
             if years_param:
@@ -73,42 +75,54 @@ class ResourceDataAPI(APIView):
             data_response = {}
             if type_slug == ResourceTypeSLUGS.AVERAGE_MONTHLY_RENT.value:
                 RentalPriceService.initialize_data(years=years, offset=200)
-                categories, series = RentalPriceService.get_average_rentals()
-                data_response.update({'average_rental': {
-                    'categories': categories,
-                    'series': series
-                }})
-                categories, series = RentalPriceService.get_average_rental_by_years()
-                data_response.update({'average_rental_per_years': {
-                    'categories': categories,
-                    'series': series
-                }})
+                if not flat:
+                    categories, series = RentalPriceService.get_average_rentals()
+                    data_response.update({'average_rental': {
+                        'categories': categories,
+                        'series': series
+                    }})
+                    categories, series = RentalPriceService.get_average_rental_by_years()
+                    data_response.update({'average_rental_per_years': {
+                        'categories': categories,
+                        'series': series
+                    }})
+                else:
+                    serializer = AverageRentalPriceSerializer(RentalPriceService.get_plain_data(), many=True)
+                    data_response = {'data': serializer.data}
             elif type_slug == ResourceTypeSLUGS.AVERAGE_OCCUPANCY.value:
                 AverageResidentsService.initialize_data(years=years, offset=200)
-                categories, series = AverageResidentsService.get_average_residents()
-                data_response.update({'average_residents': {
-                    'categories': categories,
-                    'series': series
-                }})
-                categories, series = AverageResidentsService.get_residents_per_year()
-                data_response.update({'residents_per_years': {
-                    'categories': categories,
-                    'series': series
-                }})
+                if not flat:
+                    categories, series = AverageResidentsService.get_average_residents()
+                    data_response.update({'average_residents': {
+                        'categories': categories,
+                        'series': series
+                    }})
+                    categories, series = AverageResidentsService.get_residents_per_year()
+                    data_response.update({'residents_per_years': {
+                        'categories': categories,
+                        'series': series
+                    }})
+                else:
+                    serializer = AverageResidentsSerializer(AverageResidentsService.get_plain_data(), many=True)
+                    data_response = {'data': serializer.data}
             elif type_slug == ResourceTypeSLUGS.TOURIST_OCCUPANCY.value:
                 TouristRentalsService.initialize_data(years=years, offset=200)
-                categories, series = TouristRentalsService.get_average_rentals_neighborhood()
-                data_response.update({'tourist_rental_per_neighborhood': {
-                    'categories': categories,
-                    'series': series
-                }})
-                categories, series = TouristRentalsService.get_rentals_accommodations_per_years()
-                data_response.update({'tourist_rentals_per_years': {
-                    'categories': categories,
-                    'series': series
-                }})
-                values = TouristRentalsService.get_average_rentals_grouped_district()
-                data_response.update({'tourist_rental_accommodations_per_years': values})
+                if not flat:
+                    categories, series = TouristRentalsService.get_average_rentals_neighborhood()
+                    data_response.update({'tourist_rental_per_neighborhood': {
+                        'categories': categories,
+                        'series': series
+                    }})
+                    categories, series = TouristRentalsService.get_rentals_accommodations_per_years()
+                    data_response.update({'tourist_rentals_per_years': {
+                        'categories': categories,
+                        'series': series
+                    }})
+                    values = TouristRentalsService.get_average_rentals_grouped_district()
+                    data_response.update({'tourist_rental_accommodations_per_years': values})
+                else:
+                    serializer = TouristOccupancySerializer(TouristRentalsService.get_plain_data(), many=True)
+                    data_response = {'data': serializer.data}
         except ResourceType.DoesNotExist as e:
             logger.info('ResourceData does not exists', exc_info=True, extra={'exception': e})
             return Response(status=status.HTTP_404_NOT_FOUND)
