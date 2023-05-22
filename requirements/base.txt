@@ -20,5 +20,5 @@ coreapi==2.3.3  # https://github.com/core-api/python-client
 
 
 # new added
-requests==2.22.0
+requests==2.31.0
 aiohttp[speedups]==3.6.2
